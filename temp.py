@@ -60,7 +60,6 @@ class CmdProtocol(LineReceiver):
         #判断数据结尾
         bFindEnd = False
         index_cursor = 0
-        print("current parse buffer:%s" %parse_buffer)
         for chIter in parse_buffer:
             if '\n' == parse_buffer[index_cursor] :
                 bFindEnd = True
@@ -91,13 +90,14 @@ class CmdProtocol(LineReceiver):
             action = json_object['action']
             print ('Current action : %s' % action)
         except : 
-            print ("package raw data : %s" % single_package)
+            print ("转换成json数据失败:%s" % single_package)
+            return "Error Packaget"
+        return action
     
     
     # 数据接收接口
     def dataReceived(self, recv_data):
         recv_data = recv_data.decode("UTF-8")
-        #self.package_demultiplex(recv_data.decode("UTF-8"))
         #定义一个是否接受数据的标识
         recv_length = len(recv_data)
         while 1:
@@ -110,12 +110,13 @@ class CmdProtocol(LineReceiver):
                 #解析发生错误,关闭连接
                 print ('解析发生错误,关闭连接')
                 self.transport.abortConnection()
+                
             #do biz action here
-            #self.package_demultiplex(tcp_package)
-            # d = threads.deferToThread(functools.partial(self.package_demultiplex, tcp_package))
-            # d.addCallback(self.send_response)
-            self.package_demultiplex(tcp_package)
-            self.send_response(tcp_package);
+            d = threads.deferToThread(functools.partial(self.package_demultiplex, tcp_package))
+            d.addCallback(self.send_response)
+            d.addErrback(self.send_response)
+            # self.package_demultiplex(tcp_package)
+            # self.send_response(tcp_package.encode('utf-8'));
             
             #缓存已解析完毕
             if resume_data_size == 0 :
@@ -126,7 +127,7 @@ class CmdProtocol(LineReceiver):
             recv_length = 0
         
     def send_response(self, response_data) :
-        self.transport.write(response_data + "\n")       
+        self.transport.write(response_data.encode('utf-8') + b'\n')       
             
 class RPCFactory(ServerFactory):
     # 使用 CmdProtocol 与客户端通信
