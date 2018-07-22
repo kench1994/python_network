@@ -111,7 +111,7 @@ class CmdProtocol(LineReceiver):
                 print ('解析发生错误,关闭连接')
                 self.transport.abortConnection()
                 
-            #do biz action here
+            #do rpc action here
             d = threads.deferToThread(functools.partial(self.package_demultiplex, tcp_package))
             d.addCallback(self.send_response)
             d.addErrback(self.send_response)
